@@ -1,0 +1,46 @@
+
+> epg-changes@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.3.5
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.1.197:3000
+
+ ✓ Starting...
+ ✓ Ready in 1124ms
+ ○ Compiling / ...
+ ✓ Compiled / in 1872ms (814 modules)
+ HEAD / 200 in 2058ms
+ GET / 200 in 20ms
+ ✓ Compiled /entries in 260ms (823 modules)
+ GET /entries 200 in 340ms
+ ✓ Compiled in 231ms (823 modules)
+ GET / 200 in 43ms
+ ✓ Compiled in 219ms (823 modules)
+ GET /entries 200 in 48ms
+ ✓ Compiled /analytics in 157ms (826 modules)
+ GET /analytics 200 in 207ms
+ GET / 200 in 57ms
+ GET /entries 200 in 26ms
+ GET /analytics 200 in 47ms
+ ✓ Compiled /_not-found in 327ms (830 modules)
+ GET / 404 in 379ms
+ GET / 200 in 62ms
+ GET /_next/static/css/app/layout.css?v=1752090348379 404 in 47ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 47ms
+ GET /_next/static/chunks/main-app.js?v=1752090348379 404 in 51ms
+ GET /_next/static/chunks/app/page.js 404 in 15ms
+ ✓ Compiled in 351ms (844 modules)
+ ✓ Compiled in 203ms (844 modules)
+ ✓ Compiled in 312ms (844 modules)
+ ✓ Compiled in 194ms (844 modules)
+ GET / 200 in 92ms
+ GET /_next/static/chunks/app/page.js 404 in 47ms
+ GET /_next/static/chunks/main-app.js?v=1752090427058 404 in 49ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 48ms
+ GET / 200 in 55ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 50ms
+ GET /_next/static/chunks/main-app.js?v=1752090472744 404 in 51ms
+ GET /_next/static/chunks/app/page.js 404 in 50ms
+ ✓ Compiled in 274ms (844 modules)
+[?25h

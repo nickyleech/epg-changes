@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EPG Changes Management System",
+  title: "Channel and EPG Updates",
   description: "Professional Electronic Programme Guide changes management for British TV providers",
 };
 

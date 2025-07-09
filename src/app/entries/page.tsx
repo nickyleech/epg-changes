@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Search, Edit, Trash2, Mail, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Search, Edit, Trash2, Mail, Clock, CheckCircle, AlertCircle, Upload, Download } from 'lucide-react';
 import { EPGEntry } from '@/lib/types';
 import { LocalStorage, generateId } from '@/lib/storage';
 
@@ -12,7 +12,9 @@ export default function EntriesPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterProvider, setFilterProvider] = useState<string>('all');
   const [showForm, setShowForm] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [editingEntry, setEditingEntry] = useState<EPGEntry | null>(null);
+  const [bulkImportText, setBulkImportText] = useState('');
   const [formData, setFormData] = useState<{
     channel: string;
     provider: EPGEntry['provider'];
@@ -32,6 +34,10 @@ export default function EntriesPage() {
   useEffect(() => {
     setEntries(LocalStorage.getEntries());
   }, []);
+
+  useEffect(() => {
+    console.log('showForm state changed:', showForm);
+  }, [showForm]);
 
   const filteredEntries = entries.filter(entry => {
     const matchesSearch = entry.channel.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -102,6 +108,82 @@ export default function EntriesPage() {
     setEntries(LocalStorage.getEntries());
   };
 
+  const handleBulkImport = () => {
+    if (!bulkImportText.trim()) return;
+    
+    const lines = bulkImportText.split('\n').filter(line => line.trim());
+    const now = new Date().toISOString();
+    const newEntries: EPGEntry[] = [];
+    
+    lines.forEach(line => {
+      const parts = line.split(',').map(part => part.trim());
+      if (parts.length >= 2) {
+        // Parse different formats based on the pattern
+        const channel = parts[0];
+        const description = parts[1];
+        let provider: EPGEntry['provider'] = 'Sky';
+        let changeType: EPGEntry['changeType'] = 'EPG Update';
+        
+        // Detect provider from channel name or description
+        if (channel.toLowerCase().includes('virgin') || description.toLowerCase().includes('virgin')) {
+          provider = 'Virgin Media';
+        } else if (channel.toLowerCase().includes('freeview') || description.toLowerCase().includes('freeview')) {
+          provider = 'Freeview';
+        }
+        
+        // Detect change type from description
+        if (description.toLowerCase().includes('new channel') || description.toLowerCase().includes('launch')) {
+          changeType = 'New Channel';
+        } else if (description.toLowerCase().includes('removal') || description.toLowerCase().includes('close')) {
+          changeType = 'Channel Removal';
+        } else if (description.toLowerCase().includes('technical') || description.toLowerCase().includes('frequency')) {
+          changeType = 'Technical Change';
+        }
+        
+        const newEntry: EPGEntry = {
+          id: generateId(),
+          channel: channel,
+          provider: provider,
+          changeType: changeType,
+          description: description,
+          date: new Date().toISOString().split('T')[0],
+          status: 'Pending',
+          createdAt: now,
+          updatedAt: now,
+          emailSent: false
+        };
+        
+        newEntries.push(newEntry);
+      }
+    });
+    
+    // Add all entries to storage
+    newEntries.forEach(entry => {
+      LocalStorage.addEntry(entry);
+    });
+    
+    setEntries(LocalStorage.getEntries());
+    setShowBulkImport(false);
+    setBulkImportText('');
+  };
+
+  const handleExportEntries = () => {
+    const csvContent = [
+      'Channel,Description,Provider,Change Type,Date,Status,Created',
+      ...entries.map(entry => 
+        `"${entry.channel}","${entry.description}","${entry.provider}","${entry.changeType}","${entry.date}","${entry.status}","${new Date(entry.createdAt).toLocaleDateString('en-GB')}"`
+      )
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `epg-entries-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const getStatusIcon = (status: EPGEntry['status']) => {
     switch (status) {
       case 'Completed':
@@ -134,13 +216,33 @@ export default function EntriesPage() {
           </Link>
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold text-gray-900">EPG Entries</h1>
-            <button
-              onClick={() => setShowForm(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Entry
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setShowBulkImport(true)}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Bulk Import
+              </button>
+              <button
+                onClick={handleExportEntries}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
+              </button>
+              <button
+                onClick={() => {
+                  alert('Button clicked!');
+                  console.log('New Entry button clicked');
+                  setShowForm(true);
+                }}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Entry
+              </button>
+            </div>
           </div>
         </div>
 
@@ -254,12 +356,74 @@ export default function EntriesPage() {
           </div>
         </div>
 
-        {/* Form Modal */}
-        {showForm && (
+        {/* Bulk Import Modal */}
+        {showBulkImport && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setShowForm(false)}></div>
-              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setShowBulkImport(false)}></div>
+              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                    Bulk Import EPG Entries
+                  </h3>
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 mb-2">
+                      Enter entries in CSV format (one per line). Format: Channel Name, Description
+                    </p>
+                    <p className="text-xs text-gray-500 mb-4">
+                      Examples:<br/>
+                      • BBC One HD, Programme schedule update<br/>
+                      • Sky Sports Main Event, New channel launch<br/>
+                      • Virgin Media Sport, Channel removal notice
+                    </p>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Paste Entry Data</label>
+                      <textarea
+                        rows={12}
+                        value={bulkImportText}
+                        onChange={(e) => setBulkImportText(e.target.value)}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                        placeholder="Channel Name 1, Description 1
+Channel Name 2, Description 2
+Channel Name 3, Description 3"
+                      />
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      <p>• Provider and change type will be automatically detected</p>
+                      <p>• All entries will be set to &quot;Pending&quot; status</p>
+                      <p>• Date will be set to today&apos;s date</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <button
+                    onClick={handleBulkImport}
+                    disabled={!bulkImportText.trim()}
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import Entries
+                  </button>
+                  <button
+                    onClick={() => setShowBulkImport(false)}
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Form Modal */}
+        {showForm && (
+          <div className="fixed inset-0 z-[9999] overflow-y-auto">
+            <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={() => setShowForm(false)}></div>
+              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full z-[10000]">
                 <form onSubmit={handleSubmit}>
                   <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
@@ -348,6 +512,14 @@ export default function EntriesPage() {
                       onClick={() => {
                         setShowForm(false);
                         setEditingEntry(null);
+                        setFormData({
+                          channel: '',
+                          provider: 'Sky',
+                          changeType: 'New Channel',
+                          description: '',
+                          date: new Date().toISOString().split('T')[0],
+                          status: 'Pending'
+                        });
                       }}
                       className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                     >
