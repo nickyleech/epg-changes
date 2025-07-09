@@ -35,10 +35,6 @@ export default function EntriesPage() {
     setEntries(LocalStorage.getEntries());
   }, []);
 
-  useEffect(() => {
-    console.log('showForm state changed:', showForm);
-  }, [showForm]);
-
   const filteredEntries = entries.filter(entry => {
     const matchesSearch = entry.channel.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          entry.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -232,11 +228,7 @@ export default function EntriesPage() {
                 Export CSV
               </button>
               <button
-                onClick={() => {
-                  alert('Button clicked!');
-                  console.log('New Entry button clicked');
-                  setShowForm(true);
-                }}
+                onClick={() => setShowForm(true)}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -420,10 +412,10 @@ Channel Name 3, Description 3"
 
         {/* Form Modal */}
         {showForm && (
-          <div className="fixed inset-0 z-[9999] overflow-y-auto">
+          <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-              <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={() => setShowForm(false)}></div>
-              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full z-[10000]">
+              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setShowForm(false)}></div>
+              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full relative">
                 <form onSubmit={handleSubmit}>
                   <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
